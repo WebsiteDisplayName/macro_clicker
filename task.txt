@@ -1,0 +1,1 @@
+hold control and right click every 3 secnds, separate process that presses left click every 3 second
