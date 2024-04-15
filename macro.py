@@ -12,35 +12,93 @@
 # https://youtu.be/36PpT4Z22Os
 # https://youtu.be/axMG3fkIhO4
 import pyautogui as pag
+from pynput import keyboard
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+import os
+import inspect
+import json
+class Macro(ttk.Frame):
+    def __init__(self, master):
+        # super().__init__(master, padding=15)
+        self.master = master
+        self.keyboard_shortcut_dict = dict()
+        super().__init__(master, padding=15)
+        self.filename = ttk.StringVar()
+        self.grid()
+        self.move_widget_window()
+        self.pull_keyboard_shortcuts()
+        self.create_widget_elements()
+
+    def move_widget_window(self):
+        screen_size = list(pag.size())
+        screen_size[0] = int(screen_size[0]*3/4)
+        screen_size[1] = int(screen_size[1]*3/4)
+        self.master.geometry(f"300x150+{screen_size[0]}+{screen_size[1]}")
+
+    def pull_keyboard_shortcuts(self):
+        folder_path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        with open(os.path.join(folder_path, 'macro_keyboard_shortcuts.txt')) as f:
+            keybind_list = f.readlines()
+        for line in keybind_list:
+            line_list = line.strip().split(": ")
+            self.keyboard_shortcut_dict[line_list[0]] = line_list[1].strip()
+            
+        
+
+    def create_widget_elements(self):
+        # ctrl_rmb_macro = ttk.Button(root, text="Ctrl+RMB/3 Macro", bootstyle="info-outline", commmand=CtrlRmbMacro)
+        ctrl_rmb_macro = ttk.Button(self, text="Ctrl+RMB/3 Macro", bootstyle="info-outline", command=self.ctrl_rmb_macro)
+        ctrl_rmb_macro.grid(row=0, column=0, sticky='nesw')
+
+        lmb_macro = ttk.Button(self, text="LMB/3 Macro", bootstyle="info-outline")
+        lmb_macro.grid(row=1, column=0, sticky='nesw')
+        return
+
+    def ctrl_rmb_macro(self):
+        sub_root = ttk.Window()
+        sub_root.overrideredirect(True)
+        mouse_x, mouse_y = pag.position()
+        sub_root.wm_attributes("-topmost", True)
+        sub_root.geometry(f"100x50+{mouse_x}+{mouse_y}")
+
+        ctrl_rmb_macro = ttk.Label(sub_root, text="Fish Taco")
+        ctrl_rmb_macro.pack(fill=BOTH, side=LEFT, expand=TRUE)
 
 
-class CtrlRmbMacro:
+        def reposition_info_window():
+            prev_mouse_x, prev_mouse_y = pag.position()
+            if pag.position() != [prev_mouse_x, prev_mouse_y]:
+                curr_mouse_x, curr_mouse_y = pag.position()
+                sub_root.geometry(f"100x50+{10+curr_mouse_x}+{10+curr_mouse_y}")
+            sub_root.after(25, reposition_info_window)
+            return
+
+
+        def start_macro():
+            print('Global hotkey activated!')
+
+        def for_canonical(f):
+            return lambda k: f(listener.canonical(k))
+
+        print(self.keyboard_shortcut_dict[inspect.currentframe().f_code.co_name])
+
+        hotkey = keyboard.HotKey(
+            keyboard.HotKey.parse(self.keyboard_shortcut_dict[inspect.currentframe().f_code.co_name]),
+            start_macro)
+        listener= keyboard.Listener(on_press=for_canonical(hotkey.press), on_release=for_canonical(hotkey.release))
+        listener.start()
+
+        sub_root.after(25, reposition_info_window)
+        sub_root.mainloop()
+        return    
     
 
 
-
-root = ttk.Window(title="Macro", themename="darkly")
-SS = list(pag.size())
-SS[0] = int(SS[0]*3/4)
-SS[1] = int(SS[1]*3/4)
-root.geometry(f"300x150+{SS[0]}+{SS[1]}")
-
-
-ctrl_rmb_macro = ttk.Button(root, text="Ctrl+RMB/3 Macro", bootstyle="info-outline", commmand=CtrlRmbMacro)
-ctrl_rmb_macro.pack(side=TOP, padx=5, pady=5,fill=X)
-
-lmb_macro = ttk.Button(root, text="LMB/3 Macro", bootstyle="info-outline")
-lmb_macro.pack(side=TOP, padx=5, pady=5,fill=X)
-
-
-root.mainloop()
-
-
-
-
-
+if __name__ == '__main__':
+    app = ttk.Window("Macro", "darkly")
+    Macro(app)
+    app.mainloop()
 
 
 
